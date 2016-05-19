@@ -378,7 +378,7 @@
         }
     };
 
-    Backendless._ajax_for_nodejs = function(config) {
+    Backendless._ajax_for_react_native = function(config) {
         config.data = config.data || "";
         config.asyncHandler = config.asyncHandler || {};
         config.isAsync = (typeof config.isAsync == 'boolean') ? config.isAsync : false;
@@ -390,6 +390,53 @@
         if (typeof config.data !== "string") {
             config.data = JSON.stringify(config.data);
         }
+
+        var options = {
+            method : config.method || "GET",
+            headers: {
+                "Content-Length"  : config.data ? config.data.length : 0,
+                "Content-Type"    : config.data ? 'application/json' : 'application/x-www-form-urlencoded',
+                "application-id"  : Backendless.applicationId,
+                "secret-key"      : Backendless.secretKey,
+                "application-type": "JS"
+            },
+            body: config.data
+        };
+
+        if (currentUser != null && !!currentUser["user-token"]) {
+            options.headers["user-token"] = currentUser["user-token"];
+        }
+
+        console.log(options);
+
+        return fetch(config.url, options)
+          .then((response) => {
+              console.log('DEBUG', response);
+              return new Promise((resolve, reject) => {
+                var callback = config.asyncHandler[response.status >= 200 && response.status < 300 ? "success" : "fault"];
+
+                if (Utils.isFunction(callback)) {
+                    var contentType = response.headers['content-type'];
+
+                    var buffer = response.text();
+                    if (buffer !== undefined && buffer.length && contentType && contentType.indexOf('application/json') !== -1) {
+                        buffer = tryParseJSON(buffer);
+                    }
+
+                    callback(buffer);
+                    resolve(buffer);
+                }
+                else {
+                  reject(new Error('NO CALLBACK'));
+                }
+              });
+          })
+          .catch((error) => {
+            config.asyncHandler.fault && config.asyncHandler.fault(e);
+            return Promise.reject(error);
+          });
+
+
 
         var u = require('url').parse(config.url);
         var https = u.protocol === 'https:';
@@ -443,7 +490,7 @@
         return req.end();
     };
 
-    Backendless._ajax = isBrowser ? Backendless._ajax_for_browser : Backendless._ajax_for_nodejs;
+    Backendless._ajax = isBrowser ? Backendless._ajax_for_browser : Backendless._ajax_for_react_native;
 
     var getClassName = function() {
         if (this.prototype && this.prototype.___class) {
@@ -2063,7 +2110,7 @@
                 asyncHandler: responder
             });
         },
-      
+
         /** @deprecated */
         addPoint: function(geopoint, async) {
           return this.savePoint.apply(this, arguments);
