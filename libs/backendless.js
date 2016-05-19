@@ -16,7 +16,7 @@
     }
 
 })(function(root) {
-    'use strict';
+    //'use strict';
 
     var NodeDevice = {
         name    : 'NODEJS',
@@ -25,7 +25,7 @@
         version : '1'
     };
 
-    var isBrowser = (new Function("try {return this===window;}catch(e){ return false;}"))();
+    var isBrowser = false;
 
     var WebSocket = null; // isBrowser ? window.WebSocket || window.MozWebSocket : {};
     var UIState = null;
